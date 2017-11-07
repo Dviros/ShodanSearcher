@@ -1,5 +1,6 @@
 import shodan
 import sys
+import os
 import time
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -85,6 +86,33 @@ def specific_search(p3):
     f.close()
     print "DONE, see the results file"
 
+def specific_subnet_search(p3):
+    for x in range(255):
+        ip = p3+str(x)
+	try:
+            host = api.host(ip)
+            service_file = 'service.' + ip + '.txt'
+            f = open('results.csv', 'a')
+            f2 = open(service_file, 'w')
+            try:
+                f.write('{0!s},{1!s},{2!s}'.format(host['ip_str'], host.get('org', 'n/a'), host.get('os', 'n/a')))
+	        ports =""
+	        services=""
+                for item in host['data']:    
+	            ports = ports + str(item['port']) + "|"
+	            services= services + str(item['port']) + str(item['data']) + "|"
+	        f.write(""" ,%s \n""" % (ports))
+	        f2.write(""" %s """ % (services))
+		print("[+] {0!s}".format(ip)
+            except Exception as e:
+                print e
+            f.close()
+            f2.close()
+
+	except Exception as e:
+	    print("[-] {0!s}".format(ip)
+	finally:
+	    time.sleep(1)
 
 def main():
     print """\
@@ -111,6 +139,8 @@ def main():
     print "1 = Comprehensive search (returned as JSON, can be used for IP's and keywords)"
     print "2 = Basic search (Used for keywords, can be used also with IPs)"
     print "3 = Specific known IP search"
+    print "4 = Search Subnet (format: XXX.XXX.XXX. example 192.168.1.)
+    print "5 = Search in list of Subnets
     selection = input()
 
     if selection is 1:
@@ -122,7 +152,25 @@ def main():
     if selection is 3:
         print ("What's the IP?")
         specific_search(raw_input())
-    if selection > 3 or selection < 1:
+    if selection is 4:
+        print ("Specifiy the subnet:")
+	net= raw_input()
+	#TODO: verfiy user input
+	specific_subnet_search(str(net))
+    if selection is 5:
+        print("Specify file name and path containing subnets list:")
+	filepath = raw_input()
+	#verifiy file path
+	if not os.path.isfile(filepath):
+	    print("File path {} does not exist. Exiting...".format(filepath))
+	    sys.exit()
+	with open(filepath) as fp:
+	    line = fp.readline()
+	    while line:
+	        specific_subnet_search(line.strip())
+		line = fp.readline()
+	    
+    if selection > 5 or selection < 1:
         print ("Invalid selection.")
         time.sleep(1)
         main()
